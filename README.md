@@ -1,6 +1,6 @@
-# github download dependents
+# Github Download Dependents Info
 
-Download all info in a repo's "Used by" page
+Download a repo's "Used by" page as a CSV
 
 ## Usage
 
