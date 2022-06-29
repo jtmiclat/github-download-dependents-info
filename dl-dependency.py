@@ -14,7 +14,7 @@ args = parser.parse_args()
 repo = args.repo
 
 resp_main = requests.get(f"https://github.com/{repo}")
-used_by = BeautifulSoup(resp_main.text, parser="html.parser").find(
+used_by = BeautifulSoup(resp_main.text, parser="html.parser", features="lxml").find(
     text=re.compile("Used by")
 )
 if used_by is None:
@@ -27,7 +27,7 @@ resps = []
 
 while True:
     dependency_page = requests.get(link)
-    soup = BeautifulSoup(dependency_page.text, parser="html.parser")
+    soup = BeautifulSoup(dependency_page.text, parser="html.parser", features="lxml")
     dependents = soup.findAll(attrs={"data-test-id": "dg-repo-pkg-dependent"})
 
     def get_info(dependent):
@@ -49,6 +49,8 @@ while True:
     resps += data
 
     next_text = soup.find(text="Next")
+    if next_text is None:
+        break
     next_button = next_text.find_parent()
     if next_button and "href" in next_button.attrs:
         link = next_button["href"]
