@@ -1,7 +1,9 @@
 import re
 import requests
+from requests.adapters import HTTPAdapter, Retry
 from bs4 import BeautifulSoup
 import csv
+from time import sleep
 
 import argparse
 
@@ -9,9 +11,17 @@ import argparse
 parser = argparse.ArgumentParser(
     description="Download a dependency graph based on github"
 )
-parser.add_argument("repo", metavar="N", type=str, help="Repo to download")
+parser.add_argument("repo", metavar="REPO", type=str, help="Repo to download")
+parser.add_argument(
+    "--csv",
+    metavar="CSV",
+    type=str,
+    help="CSV target file. Default is repo_dependency.csv",
+    default="repo_dependency.csv",
+)
 args = parser.parse_args()
 repo = args.repo
+csv_file = args.csv
 
 resp_main = requests.get(f"https://github.com/{repo}")
 used_by = BeautifulSoup(resp_main.text, parser="html.parser", features="lxml").find(
@@ -23,10 +33,15 @@ if used_by is None:
     )
 used_by_link = used_by.find_parent()["href"]
 link = f"https://github.com{used_by_link}"
-resps = []
-
+session = requests.Session()
+retries = Retry(total=5, backoff_factor=1, status_forcelist=[429, 504, 502])
+session.mount("https://", HTTPAdapter(max_retries=retries))
+f = open(csv_file, "w")
+writer = csv.DictWriter(f, ["repo_name", "stars", "forks"])
+writer.writeheader()
 while True:
-    dependency_page = requests.get(link)
+    dependency_page = session.get(link)
+    sleep(0.5)
     soup = BeautifulSoup(dependency_page.text, parser="html.parser", features="lxml")
     dependents = soup.findAll(attrs={"data-test-id": "dg-repo-pkg-dependent"})
 
@@ -45,9 +60,8 @@ while True:
             "forks": int(forks.replace(",", "")),  # convert 1,000 to 1000
         }
 
-    data = [get_info(d) for d in dependents]
-    resps += data
-
+    for d in dependents:
+        writer.writerow(get_info(d))
     next_text = soup.find(text="Next")
     if next_text is None:
         break
@@ -56,9 +70,4 @@ while True:
         link = next_button["href"]
     else:
         break
-
-with open("repo_dependency.csv", "w") as f:
-    writer = csv.DictWriter(f, ["repo_name", "stars", "forks"])
-    writer.writeheader()
-    for dict in resps:
-        writer.writerow(dict)
+f.close()
