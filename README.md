@@ -12,8 +12,8 @@ python dl-dependency.py <USER>/<repo>
 ## Example
 
 ```
-python dl-dependency.py fastai/nbdev
-python dl-dependency.py fastai/nbdev --csv file.csv
+python main.py fastai/nbdev
+python main.py fastai/nbdev --csv file.csv
 ```
 
 ```python
