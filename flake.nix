@@ -27,6 +27,7 @@
             pkgs.python311Packages.pip
             pkgs.python311Packages.requests
             pkgs.python311Packages.beautifulsoup4
+            pkgs.python311Packages.lxml
           ];
           python = pkgs.python311.withPackages pythonPackages;
           app = python.pkgs.buildPythonApplication {
